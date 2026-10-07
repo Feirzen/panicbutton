@@ -2,15 +2,17 @@
 
 A one-tap coping ladder. Hit the button, name what's going on, work down a list from quick and easy to bigger moves, then log how it went.
 
-- Two tracks, each with its own tiered list (editable in Settings)
+- One tiered list for both tracks (editable in Settings)
 - Built-in timers, with a guided box breathing square and urge surfing prompts
 - "Didn't really help" unlocks after most of the list, then offers the big resets
 - A log with notes, manual entries, and an Insights page showing which tools bring the urge down most
 - Light, dark, sepia, and chameleon themes
 
-## Privacy
+## Privacy and sync
 
-Everything you log stays in your phone's storage. Nothing is sent to GitHub or anywhere else. This repo only holds the app's code. Use **Settings > Export backup** now and then so you don't lose your log.
+Without sync, everything stays in the device's own storage.
+
+With sync on, the log is also saved to a separate **private** repo (`panicbutton-data`). The GitHub token that reaches it is locked with your sync password before it's stored here as `vault.json`, so the public repo never holds anything readable. A new device just needs the password (Settings > Sync across devices).
 
 ## Install on iPhone
 
