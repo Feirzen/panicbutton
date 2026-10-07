@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en" data-theme="midnight">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Panic Button</title>
+<meta name="description" content="A one-tap coping ladder with a private log.">
+<meta id="themeColorMeta" name="theme-color" content="#0f0f13">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Panic Button">
+<meta property="og:title" content="Panic Button">
+<meta property="og:description" content="Breathe. Reset. Log it.">
+<meta property="og:image" content="https://feirzen.github.io/panicbutton/icons/og-image.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <button class="navbtn" data-go="home" aria-label="Home">⌂</button>
+  <nav>
+    <button class="tab" data-go="history">Log</button>
+    <button class="tab" data-go="insights">Insights</button>
+    <button class="tab" data-go="settings">Settings</button>
+  </nav>
+  <button class="navbtn" id="themeBtn" aria-label="Theme">🎨</button>
+</header>
+<div id="themePop" class="themepop" hidden></div>
+<main id="app"></main>
+<div id="modal" class="modal" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>
