@@ -549,7 +549,12 @@ VIEWS.settings = () => {
   <h2>Backup</h2>
   <p class="muted">Export a copy of everything now and then, just in case.</p>
   <div class="row"><button class="btn" id="exp">Export backup</button><button class="btn" id="imp">Import backup</button></div>
-  <input type="file" id="impFile" accept="application/json,.json" hidden>`;
+  <input type="file" id="impFile" accept="application/json,.json" hidden>
+
+  <h2>Feedback</h2>
+  <p class="muted">Something off, or an idea? Flag it and it gets handled in the background.</p>
+  <div class="row"><button class="btn" id="flagPlant">Plant a flag</button><button class="btn" id="flagGeneral">General feedback</button></div>`;
+  if ($("#flagPlant")) { $("#flagPlant").onclick = () => window.Kit && setTimeout(() => Kit.flag.plant(), 0); $("#flagGeneral").onclick = () => window.Kit && setTimeout(() => Kit.flag.general(), 0); }
 
   const pull = () => {
     settings.riName = $("#sRiName").value.trim() || "Ri";
