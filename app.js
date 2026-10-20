@@ -79,13 +79,15 @@ function toast(msg) {
   const t = document.createElement("div"); t.className = "toast"; t.textContent = msg;
   document.body.appendChild(t); setTimeout(() => t.remove(), 2400);
 }
+let snd = load("pb.sound", { on: true, vol: 1 });
 function beep() {
+  if (!snd.on || snd.vol <= 0) return;
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     [0, .35, .7].forEach(off => {
       const o = ctx.createOscillator(), g = ctx.createGain();
       o.frequency.value = 660; o.connect(g); g.connect(ctx.destination);
-      g.gain.setValueAtTime(.2, ctx.currentTime + off); g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + off + .3);
+      g.gain.setValueAtTime(.2 * snd.vol, ctx.currentTime + off); g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + off + .3);
       o.start(ctx.currentTime + off); o.stop(ctx.currentTime + off + .3);
     });
   } catch {}
@@ -100,11 +102,14 @@ const THEMES = {
   chameleon: { label: "Chameleon", swatch: "conic-gradient(#f87171,#fbbf24,#34d399,#38bdf8,#a78bfa,#f87171)" },
 };
 const CHAM_VARS = ["bg", "surface", "surface2", "border", "text", "dim", "muted", "accent", "ok", "bad", "star", "shadow"];
-function makeChameleon() {
+let cham = load("pb.cham", { tone: "any", lock: null });
+let chamNow = null;
+function makeChameleon(tone = cham.tone) {
   const h = Math.floor(Math.random() * 360);
   const acc = (h + 120 + Math.floor(Math.random() * 110)) % 360;
   const H = (x, s, l) => `hsl(${x} ${s}% ${l}%)`;
-  if (Math.random() < 0.28) return {
+  const light = tone === "light" ? true : tone === "dark" ? false : Math.random() < 0.28;
+  if (light) return {
     bg: H(h, 32, 95), surface: H(h, 42, 99), surface2: H(h, 26, 91), border: H(h, 22, 83),
     text: H(h, 38, 11), dim: H(h, 18, 33), muted: H(h, 14, 50), accent: H(acc, 66, 37),
     ok: "hsl(158 72% 29%)", bad: "hsl(0 72% 44%)", star: "hsl(32 88% 34%)", shadow: "rgba(40,35,20,.16)",
@@ -120,18 +125,22 @@ function applyTheme() {
   const root = document.documentElement;
   root.setAttribute("data-theme", t);
   if (t === "chameleon") {
-    const pal = makeChameleon();
-    CHAM_VARS.forEach(v => root.style.setProperty("--" + v, pal[v]));
+    paintCham(cham.lock || makeChameleon());
   } else {
     CHAM_VARS.forEach(v => root.style.removeProperty("--" + v));
   }
+  requestAnimationFrame(() => $("#themeColorMeta").setAttribute("content", getComputedStyle(document.body).backgroundColor));
+}
+function paintCham(pal) {
+  chamNow = pal;
+  CHAM_VARS.forEach(v => document.documentElement.style.setProperty("--" + v, pal[v]));
   requestAnimationFrame(() => $("#themeColorMeta").setAttribute("content", getComputedStyle(document.body).backgroundColor));
 }
 function renderThemePop() {
   $("#themePop").innerHTML = Object.entries(THEMES).map(([k, t]) =>
     `<button class="sw ${theme === k ? "on" : ""}" data-theme="${k}"><i style="background:${t.swatch}"></i>${t.label}</button>`).join("");
 }
-$("#themeBtn").onclick = e => { e.stopPropagation(); renderThemePop(); $("#themePop").hidden = !$("#themePop").hidden; };
+$("#themeBtn").onclick = e => { if (window.Kit) return; e.stopPropagation(); renderThemePop(); $("#themePop").hidden = !$("#themePop").hidden; };
 $("#themePop").onclick = e => {
   const b = e.target.closest("[data-theme]"); if (!b) return;
   theme = b.dataset.theme; save(K.theme, theme); applyTheme(); renderThemePop(); // tapping chameleon again re-rolls
@@ -549,12 +558,7 @@ VIEWS.settings = () => {
   <h2>Backup</h2>
   <p class="muted">Export a copy of everything now and then, just in case.</p>
   <div class="row"><button class="btn" id="exp">Export backup</button><button class="btn" id="imp">Import backup</button></div>
-  <input type="file" id="impFile" accept="application/json,.json" hidden>
-
-  <h2>Feedback</h2>
-  <p class="muted">Something off, or an idea? Flag it and it gets handled in the background.</p>
-  <div class="row"><button class="btn" id="flagPlant">Plant a flag</button><button class="btn" id="flagGeneral">General feedback</button></div>`;
-  if ($("#flagPlant")) { $("#flagPlant").onclick = () => window.Kit && setTimeout(() => Kit.flag.plant(), 0); $("#flagGeneral").onclick = () => window.Kit && setTimeout(() => Kit.flag.general(), 0); }
+  <input type="file" id="impFile" accept="application/json,.json" hidden>`;
 
   const pull = () => {
     settings.riName = $("#sRiName").value.trim() || "Ri";
@@ -765,3 +769,27 @@ go("home");
 syncNow();
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") syncNow(); });
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+
+/* Shared kit (Feirzen/flag-hub): the top-right button becomes the settings gear with
+   Look, Flag, Sound, and a shortcut to the Settings page. Panic Button paints its own looks.
+   Keep the kit <script> tag at the bottom of index.html. */
+const PB_GEAR = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
+const PB_SPEAKER = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>';
+const PB_NAMES = { midnight: "dark", paper: "light", sepia: "sepia", chameleon: "chameleon" };
+window.KitConfig = {
+  gear: "#themeBtn",
+  look: {
+    get: () => ({ theme: PB_NAMES[theme] || "dark", tone: cham.tone, locked: !!cham.lock }),
+    set: t => { theme = Object.keys(PB_NAMES).find(k => PB_NAMES[k] === t) || "midnight"; save(K.theme, theme); cham.lock = null; save("pb.cham", cham); applyTheme(); },
+    tone: t => { const was = !!cham.lock; cham.tone = t; paintCham(makeChameleon()); cham.lock = was ? chamNow : null; save("pb.cham", cham); },
+    lock: on => { cham.lock = on ? chamNow : null; save("pb.cham", cham); },
+    reroll: () => paintCham(makeChameleon()),
+  },
+  tray: [{
+    id: "sound", label: "Alert sound", icon: PB_SPEAKER,
+    slider: { min: 0, max: 1, step: 0.05, get: () => snd.vol, set: v => { snd.vol = v; save("pb.sound", snd); } },
+    toggle: { label: "Timer beep", get: () => snd.on, set: on => { snd.on = on; save("pb.sound", snd); if (on) beep(); } },
+  }],
+  more: () => go("settings"),
+};
+$("#themeBtn").innerHTML = PB_GEAR;
