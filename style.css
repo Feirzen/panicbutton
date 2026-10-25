@@ -190,3 +190,20 @@ input.clock {
 }
 input.clock:focus { outline: none; border-bottom-color: var(--accent); }
 input.clock::placeholder { font-size: 22px; color: var(--muted); }
+
+/* ===== Ladder polish: progress line, gentle check, solid footer ===== */
+.progress { display: flex; align-items: center; gap: 10px; margin: -6px 0 4px; font-size: 13px; color: var(--muted); }
+.progress .pbar { flex: 1; height: 4px; border-radius: 4px; background: var(--surface2); overflow: hidden; }
+.progress .pbar i { display: block; height: 100%; width: 0; background: var(--ok); border-radius: 4px; transition: width .45s cubic-bezier(.2,.8,.2,1); }
+.item { transition: background .25s, border-color .25s; }
+.item .check { transition: background .2s, border-color .2s; }
+.item .name { transition: color .25s; }
+.item.done { border-color: color-mix(in srgb, var(--ok) 35%, var(--border)); }
+.item.pop .check { animation: checkPop .32s cubic-bezier(.2,.8,.2,1); }
+@keyframes checkPop { 0% { transform: scale(.8); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
+.sticky-foot {
+  background: var(--bg); box-shadow: 0 -14px 14px -2px var(--bg);
+  margin: 8px -16px 0; padding-left: 16px; padding-right: 16px;
+}
+.navbtn { display: grid; place-items: center; }
+@media (prefers-reduced-motion: reduce) { .item.pop .check { animation: none; } .progress .pbar i { transition: none; } }
