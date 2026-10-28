@@ -190,3 +190,39 @@ input.clock {
 }
 input.clock:focus { outline: none; border-bottom-color: var(--accent); }
 input.clock::placeholder { font-size: 22px; color: var(--muted); }
+
+/* ===== Calm timer: progress ring, breathing square that fills and empties ===== */
+.modal { animation: scrimIn .22s ease-out; }
+.modal .box { animation: boxIn .32s cubic-bezier(.2,.8,.2,1); }
+.modal.closing { animation: scrimOut .18s ease-in forwards; }
+.modal.closing .box { animation: boxOut .18s ease-in forwards; }
+@keyframes scrimIn { from { opacity: 0; } }
+@keyframes scrimOut { to { opacity: 0; } }
+@keyframes boxIn { from { opacity: 0; transform: translateY(14px) scale(.98); } }
+@keyframes boxOut { to { opacity: 0; transform: translateY(8px) scale(.98); } }
+
+.clockwrap { position: relative; margin: 6px auto 0; }
+.clockwrap.ring { width: 220px; height: 220px; margin-bottom: 12px; display: grid; place-items: center; }
+.ringsvg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.ringsvg circle { fill: none; stroke-width: 5; }
+.ringsvg .track { stroke: var(--border); }
+.ringsvg .prog { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset .3s linear, stroke .4s; }
+.clockwrap.ring input.clock { width: 150px; font-size: 48px; border-bottom-color: transparent; }
+.clockwrap.ring input.clock:focus { border-bottom-color: var(--accent); }
+.clockwrap.small input.clock { font-size: 36px; }
+.box.finished .ringsvg .prog { stroke: var(--ok); }
+.box.finished input.clock { color: var(--ok); }
+
+.breath { width: 190px; height: 190px; border-radius: 14px; border-width: 2px; margin: 18px auto 14px; }
+.breath .fill {
+  position: absolute; inset: 10px; border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  transform: scale(.42); transition: transform 4s ease-in-out;
+}
+.breath .dot { box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 22%, transparent); }
+.breath-label { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; pointer-events: none; }
+.breath-label .phase { font-size: 18px; min-height: 0; }
+.breath-label .count { font-size: 15px; color: var(--dim); font-variant-numeric: tabular-nums; min-height: 20px; }
+@media (prefers-reduced-motion: reduce) {
+  .modal, .modal .box, .modal.closing, .modal.closing .box { animation: none; }
+}
