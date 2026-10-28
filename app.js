@@ -304,10 +304,14 @@ function openTimer(name, minutes, onDone) {
   ];
   m.innerHTML = `<div class="box">
     <h2 style="margin-top:0">${esc(cleanName(name))}</h2>
-    ${isBox ? `<div class="breath"><div class="dot" id="dot"></div></div><div class="phase" id="phase">Breathe in</div>` : ""}
+    ${isBox ? `<div class="breath" id="breath"><div class="fill" id="fill"></div><div class="dot" id="dot"></div>
+      <div class="breath-label"><div class="phase" id="phase">Breathe in</div><div class="count" id="count">4</div></div></div>` : ""}
     ${isSurf ? `<div class="guide" id="guide">${SURF[0]}</div>` : ""}
     ${isNap ? `<div class="guide">Phone face down. It beeps when time's up if the app is still open.</div>` : ""}
-    <input class="clock" id="clock" inputmode="decimal" autocomplete="off" aria-label="Time left, tap to change">
+    <div class="${isBox ? "clockwrap small" : "clockwrap ring"}">
+      ${isBox ? "" : `<svg class="ringsvg" viewBox="0 0 120 120" aria-hidden="true"><circle class="track" cx="60" cy="60" r="54"/><circle class="prog" id="prog" cx="60" cy="60" r="54"/></svg>`}
+      <input class="clock" id="clock" inputmode="decimal" autocomplete="off" aria-label="Time left, tap to change">
+    </div>
     <div class="hint" style="margin:-4px 0 14px">Tap the time to change it</div>
     <div class="row"><button class="btn" id="tCancel">Stop</button><button class="btn primary" id="tDone">Done</button></div>
   </div>`;
@@ -316,20 +320,32 @@ function openTimer(name, minutes, onDone) {
   // box breathing: 4s in, 4s hold, 4s out, 4s hold, the dot travels around the square
   const corners = [["0", "100%"], ["0", "0"], ["100%", "0"], ["100%", "100%"]];
   const phases = ["Breathe in", "Hold", "Breathe out", "Hold"];
+  // the square fills as you breathe in, stays full on the hold, empties as you breathe out
+  const fills = [1, 1, .42, .42];
+  const C = 2 * Math.PI * 54, prog = $("#prog");
+  if (prog) prog.style.strokeDasharray = C;
   let lastPhase = -1;
   const tick = () => {
     const l = left();
     if (document.activeElement !== clock) clock.value = finished ? "Done" : fmt(l);
     const elapsed = total - l;
+    if (prog) prog.style.strokeDashoffset = finished ? C : C * (1 - l / total);
+    m.querySelector(".box").classList.toggle("finished", finished);
     if (isBox && pausedLeft == null && !finished) {
       const p = Math.floor(elapsed / 4000) % 4;
+      $("#count").textContent = 4 - Math.floor((elapsed % 4000) / 1000);
       if (p !== lastPhase) {
         lastPhase = p;
         const [x, y] = corners[(p + 1) % 4];
-        setTimeout(() => { const d = $("#dot"); if (d) { d.style.left = x; d.style.top = y; } }, 30);
+        setTimeout(() => {
+          const d = $("#dot"), f = $("#fill");
+          if (d) { d.style.left = x; d.style.top = y; }
+          if (f) f.style.transform = `scale(${fills[p]})`;
+        }, 30);
         $("#phase").textContent = phases[p];
       }
     }
+    if (isBox && finished) { $("#phase").textContent = "Nice"; $("#count").textContent = ""; $("#fill").style.transform = "scale(.42)"; }
     if (isSurf) $("#guide").textContent = SURF[Math.floor(elapsed / 30000) % SURF.length];
     if (l <= 0 && !finished && pausedLeft == null) { finished = true; beep(); clock.value = "Done"; }
   };
@@ -342,7 +358,10 @@ function openTimer(name, minutes, onDone) {
     pausedLeft = null; clock.placeholder = ""; tick();
   };
   tick(); timerTick = setInterval(tick, 250);
-  const close = () => { clearInterval(timerTick); m.hidden = true; m.innerHTML = ""; };
+  const close = () => {
+    clearInterval(timerTick); m.classList.add("closing");
+    setTimeout(() => { m.hidden = true; m.innerHTML = ""; m.classList.remove("closing"); }, 180);
+  };
   $("#tCancel").onclick = close;
   $("#tDone").onclick = () => { close(); onDone && onDone(); };
 }
