@@ -228,6 +228,7 @@ VIEWS.ladder = () => {
   ${backBtn()}
   <h1>${TRACKS[active.track].label}</h1>
   <p class="sub">${active.feeling ? `"${esc(active.feeling)}"` : "Start at the top. Check things off as you go."}</p>
+  <div class="progress" aria-live="polite"><div class="pbar"><i id="pFill"></i></div><span id="pText"></span></div>
   ${tiers.map((items, i) => `
     <div class="tier"><h3>${TIER_NAMES[i] || "Tier " + (i + 1)}</h3>
     ${items.map(name => {
@@ -244,8 +245,9 @@ VIEWS.ladder = () => {
       <button class="btn ok" id="safeBtn" ${n >= 1 ? "" : "disabled"}>I feel safe</button>
       <button class="btn bad" id="noHelpBtn" ${n >= need ? "" : "disabled"}>Didn't really help</button>
     </div>
-    <div class="hint">${n >= need ? "Both options open." : `"Didn't really help" opens after ${need}. You're at ${n}.`}</div>
+    <div class="hint" id="ladderHint"></div>
   </div>`;
+  refreshLadder();
   $("#backBtn").onclick = () => { active.stage = "start"; saveActive(); go("start"); };
   app.querySelectorAll("[data-item]").forEach(b => b.onclick = () => toggleDone(b.dataset.item));
   app.querySelectorAll("[data-timer]").forEach(b => b.onclick = () => openTimer(b.dataset.timer, minutesOf(b.dataset.timer), () => {
@@ -254,10 +256,26 @@ VIEWS.ladder = () => {
   $("#safeBtn").onclick = () => { active.outcome = "safe"; active.stage = "resolve"; saveActive(); go("resolve"); };
   $("#noHelpBtn").onclick = () => { active.stage = "reset"; saveActive(); go("reset"); };
 };
+// checks update in place (no redraw), so the page doesn't jump and the check can animate
 function toggleDone(name) {
   const i = active.done.indexOf(name);
   if (i >= 0) active.done.splice(i, 1); else active.done.push(name);
-  saveActive(); VIEWS.ladder();
+  saveActive();
+  const b = [...app.querySelectorAll("[data-item]")].find(x => x.dataset.item === name);
+  if (!b) return VIEWS.ladder();
+  const on = active.done.includes(name), row = b.closest(".item");
+  row.classList.toggle("done", on); b.textContent = on ? "✓" : "";
+  row.classList.remove("pop"); void row.offsetWidth; if (on) row.classList.add("pop");
+  if (on && navigator.vibrate) navigator.vibrate(12);
+  refreshLadder();
+}
+function refreshLadder() {
+  const need = Math.min(UNLOCK_AFTER, allItems().length), n = active.done.length, total = allItems().length;
+  const safe = $("#safeBtn"), nh = $("#noHelpBtn"); if (!safe) return;
+  safe.disabled = n < 1; nh.disabled = n < need;
+  $("#ladderHint").textContent = n >= need ? "Both options open." : `"Didn't really help" opens after ${need}. You're at ${n}.`;
+  $("#pFill").style.width = (total ? n / total * 100 : 0) + "%";
+  $("#pText").textContent = n ? `${n} of ${total} done` : `${total} things to try`;
 }
 
 /* ===================== TIMER MODAL ===================== */
@@ -812,3 +830,4 @@ window.KitConfig = {
   more: () => go("settings"),
 };
 $("#themeBtn").innerHTML = PB_GEAR;
+$('[data-go="home"].navbtn').innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg>';
